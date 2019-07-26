@@ -18,9 +18,9 @@ Under the hood a history table with the same structure, but without constraints 
 
 The normal singular/plural naming scheme in Sequelize is used:
 
-- model name: `modelName + 'History'`
-- table name: `modelName + 'Histories'`
-- index name: `indexName + '_history'`
+- model name: `modelName + 'Temporalize'`
+- table name: `modelName + 'Temporalizes'`
+- index name: `indexName + '_temporalize'`
 
 ## Installation
 
