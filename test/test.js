@@ -363,14 +363,14 @@ describe('Read-only API', function() {
 
     it('onUpdate/onDestroy: should save to the historyDB', function() {
       return sequelize.models.User.create()
-        .then(assertCount(sequelizeHist.models.UserHistory, 0))
+        .then(assertCount(sequelizeHist.models.UserTemporalize, 0))
         .then(user => {
           user.name = 'foo';
           return user.save();
         })
-        .then(assertCount(sequelizeHist.models.UserHistory, 1))
+        .then(assertCount(sequelizeHist.models.UserTemporalize, 1))
         .then(user => user.destroy())
-        .then(assertCount(sequelizeHist.models.UserHistory, 2));
+        .then(assertCount(sequelizeHist.models.UserTemporalize, 2));
     });
 
     it('revert on failed transactions', function() {
@@ -379,15 +379,15 @@ describe('Read-only API', function() {
         .then(t => {
           var opts = { transaction: t };
           return sequelize.models.User.create({ name: 'not foo' })
-            .then(assertCount(sequelizeHist.models.UserHistory, 0))
+            .then(assertCount(sequelizeHist.models.UserTemporalize, 0))
             .then(user => {
               user.name = 'foo';
               user.save(opts);
             })
-            .then(assertCount(sequelizeHist.models.UserHistory, 1))
+            .then(assertCount(sequelizeHist.models.UserTemporalize, 1))
             .then(() => t.rollback());
         })
-        .then(assertCount(sequelizeHist.models.UserHistory, 1));
+        .then(assertCount(sequelizeHist.models.UserTemporalize, 1));
     });
 
     it('should archive every entry', function() {
@@ -395,11 +395,11 @@ describe('Read-only API', function() {
         { name: 'foo1' },
         { name: 'foo2' }
       ])
-        .then(assertCount(sequelizeHist.models.UserHistory, 0))
+        .then(assertCount(sequelizeHist.models.UserTemporalize, 0))
         .then(() =>
           sequelize.models.User.update({ name: 'updated-foo' }, { where: {} })
         )
-        .then(assertCount(sequelizeHist.models.UserHistory, 2));
+        .then(assertCount(sequelizeHist.models.UserTemporalize, 2));
     });
 
     it('should revert under transactions', function() {
@@ -411,17 +411,17 @@ describe('Read-only API', function() {
             [{ name: 'foo1' }, { name: 'foo2' }],
             opts
           )
-            .then(assertCount(sequelizeHist.models.UserHistory, 0))
+            .then(assertCount(sequelizeHist.models.UserTemporalize, 0))
             .then(() =>
               sequelize.models.User.update(
                 { name: 'updated-foo' },
                 { where: {}, transaction: t }
               )
             )
-            .then(assertCount(sequelizeHist.models.UserHistory, 2))
+            .then(assertCount(sequelizeHist.models.UserTemporalize, 2))
             .then(() => t.rollback());
         })
-        .then(assertCount(sequelizeHist.models.UserHistory, 2));
+        .then(assertCount(sequelizeHist.models.UserTemporalize, 2));
     });
 
     it('should revert on failed transactions, even when using after hooks', function() {
@@ -432,10 +432,10 @@ describe('Read-only API', function() {
 
           return sequelize.models.User.create({ name: 'test' }, options)
             .then(user => user.destroy(options))
-            .then(assertCount(sequelizeHist.models.UserHistory, 1))
+            .then(assertCount(sequelizeHist.models.UserTemporalize, 1))
             .then(() => transaction.rollback());
         })
-        .then(assertCount(sequelizeHist.models.UserHistory, 1));
+        .then(assertCount(sequelizeHist.models.UserTemporalize, 1));
     });
   });
 
@@ -449,7 +449,7 @@ describe('Read-only API', function() {
         const user = init.then(() => sequelize.models.User.findOne());
 
         //User associations check
-        const userHistory = user.then(u => {
+        const userTemporalize = user.then(u => {
           assert.notExists(u.getUserHistories, 'User: getUserHistories exists');
           return Promise.resolve('done');
         });
@@ -467,7 +467,7 @@ describe('Read-only API', function() {
         });
 
         //Creation associations check
-        const creationHistory = creation.then(c => {
+        const creationTemporalize = creation.then(c => {
           assert.equal(c.length, 2, 'User: should have found 2 creations');
           const first = c[0];
           assert.notExists(
@@ -508,7 +508,7 @@ describe('Read-only API', function() {
           });
 
         //Tag associations check
-        const tagHistory = tag.then(t => {
+        const tagTemporalize = tag.then(t => {
           assert.equal(t.length, 3, 'Creation: should have found 3 tags');
           const first = t[0];
           assert.notExists(
@@ -533,7 +533,7 @@ describe('Read-only API', function() {
           });
 
         //Event associations check
-        const eventHistory = event.then(e => {
+        const eventTemporalize = event.then(e => {
           assert.exists(e, 'Creation: did not find event');
           assert.notExists(
             e.getEventHistories,
@@ -554,39 +554,39 @@ describe('Read-only API', function() {
 
         //Check history data
         const userHistories = init.then(
-          assertCount(sequelize.models.UserHistory, 6)
+          assertCount(sequelize.models.UserTemporalize, 6)
         );
         const creationHistories = init.then(
-          assertCount(sequelize.models.CreationHistory, 6)
+          assertCount(sequelize.models.CreationTemporalize, 6)
         );
         const tagHistories = init.then(
-          assertCount(sequelize.models.TagHistory, 9)
+          assertCount(sequelize.models.TagTemporalize, 9)
         );
         const eventHistories = init.then(
-          assertCount(sequelize.models.EventHistory, 6)
+          assertCount(sequelize.models.EventTemporalize, 6)
         );
         const creationTagHistories = init.then(
-          assertCount(sequelize.models.CreationTagHistory, 1)
+          assertCount(sequelize.models.CreationTagTemporalize, 1)
         );
 
         return Promise.all([
           creation,
           creationHistories,
-          creationHistory,
+          creationTemporalize,
           creationTagHistories,
           cUser,
           eCreation,
           event,
           eventHistories,
-          eventHistory,
+          eventTemporalize,
           init,
           tag,
           tagHistories,
-          tagHistory,
+          tagTemporalize,
           tCreation,
           user,
           userHistories,
-          userHistory
+          userTemporalize
         ]);
       });
     });
@@ -600,7 +600,7 @@ describe('Read-only API', function() {
         const user = init.then(() => sequelize.models.User.findOne());
 
         //User associations check
-        const userHistory = user.then(u => {
+        const userTemporalize = user.then(u => {
           assert.exists(
             u.getUserHistories,
             'User: getUserHistories does not exist'
@@ -621,7 +621,7 @@ describe('Read-only API', function() {
         });
 
         //UserHistories associations check
-        const uhCreation = userHistory
+        const uhCreation = userTemporalize
           .then(uh => {
             assert.equal(
               uh.length,
@@ -631,11 +631,11 @@ describe('Read-only API', function() {
             const first = uh[0];
             assert.exists(
               first.getCreatorCreations,
-              'UserHistory: getCreatorCreations does not exist'
+              'UserTemporalize: getCreatorCreations does not exist'
             );
             assert.exists(
               first.getUpdatorCreations,
-              'UserHistory: getUpdatorCreations does not exist'
+              'UserTemporalize: getUpdatorCreations does not exist'
             );
             return first.getCreatorCreations();
           })
@@ -643,24 +643,27 @@ describe('Read-only API', function() {
             assert.equal(
               uhc.length,
               2,
-              'UserHistory: should have found 2 creations'
+              'UserTemporalize: should have found 2 creations'
             );
             return Promise.resolve('done');
           });
 
-        const uhUser = userHistory
+        const uhUser = userTemporalize
           .then(uh => {
             const first = uh[0];
-            assert.exists(first.getUser, 'UserHistory: getUser does not exist');
+            assert.exists(
+              first.getUser,
+              'UserTemporalize: getUser does not exist'
+            );
             return first.getUser();
           })
           .then(uhu => {
-            assert.exists(uhu, 'UserHistory: did not find a user');
+            assert.exists(uhu, 'UserTemporalize: did not find a user');
             return Promise.resolve('done');
           });
 
         //Creation associations check
-        const creationHistory = creation.then(c => {
+        const creationTemporalize = creation.then(c => {
           assert.equal(c.length, 2, 'User: should have found 2 creations');
           const first = c[0];
           assert.exists(
@@ -701,7 +704,7 @@ describe('Read-only API', function() {
           });
 
         //CreationHistories association check
-        const chCreation = creationHistory
+        const chCreation = creationTemporalize
           .then(ch => {
             assert.equal(
               ch.length,
@@ -711,21 +714,21 @@ describe('Read-only API', function() {
             const first = ch[0];
             assert.exists(
               first.getCreation,
-              'CreationHistory: getCreation does not exist'
+              'CreationTemporalize: getCreation does not exist'
             );
             return first.getCreation();
           })
           .then(chc => {
-            assert.exists(chc, 'CreationHistory: did noy find a creation');
+            assert.exists(chc, 'CreationTemporalize: did noy find a creation');
             return Promise.resolve('done');
           });
 
-        const chTag = creationHistory
+        const chTag = creationTemporalize
           .then(ch => {
             const first = ch[0];
             assert.exists(
               first.getTags,
-              'CreationHistory: getTags does not exist'
+              'CreationTemporalize: getTags does not exist'
             );
             return first.getTags();
           })
@@ -734,40 +737,40 @@ describe('Read-only API', function() {
             return Promise.resolve('done');
           });
 
-        const chUser = creationHistory
+        const chUser = creationTemporalize
           .then(ch => {
             const first = ch[0];
             assert.exists(
               first.getCreateUser,
-              'CreationHistory: getCreateUser does not exist'
+              'CreationTemporalize: getCreateUser does not exist'
             );
             assert.exists(
               first.getUpdateUser,
-              'CreationHistory: getUpdateUser does not exist'
+              'CreationTemporalize: getUpdateUser does not exist'
             );
             return first.getCreateUser();
           })
           .then(chu => {
-            assert.exists(chu, 'CreationHistory: did not find a user');
+            assert.exists(chu, 'CreationTemporalize: did not find a user');
             return Promise.resolve('done');
           });
 
-        const chEvent = creationHistory
+        const chEvent = creationTemporalize
           .then(ch => {
             const first = ch[0];
             assert.exists(
               first.getEvent,
-              'CreationHistory: getEvent does not exist'
+              'CreationTemporalize: getEvent does not exist'
             );
             return first.getEvent();
           })
           .then(che => {
-            assert.exists(che, 'CreationHistory: did not find an event');
+            assert.exists(che, 'CreationTemporalize: did not find an event');
             return Promise.resolve('done');
           });
 
         //Tag associations check
-        const tagHistory = tag.then(t => {
+        const tagTemporalize = tag.then(t => {
           assert.equal(t.length, 3, 'Creation: should have found 3 tags');
           const first = t[0];
           assert.exists(
@@ -792,28 +795,31 @@ describe('Read-only API', function() {
           });
 
         //TagHistories associations check
-        const thTag = tagHistory
+        const thTag = tagTemporalize
           .then(th => {
             assert.equal(
               th.length,
               3,
-              'TagHistory: should have found 3 TagHistories'
+              'TagTemporalize: should have found 3 TagHistories'
             );
             const first = th[0];
-            assert.exists(first.getTag, 'TagHistory: getTag does not exist');
+            assert.exists(
+              first.getTag,
+              'TagTemporalize: getTag does not exist'
+            );
             return first.getTag();
           })
           .then(tht => {
-            assert.exists(tht, 'TagHistory: did not find a tag');
+            assert.exists(tht, 'TagTemporalize: did not find a tag');
             return Promise.resolve('done');
           });
 
-        const thCreation = tagHistory
+        const thCreation = tagTemporalize
           .then(th => {
             const first = th[0];
             assert.exists(
               first.getCreations,
-              'TagHistory: getCreations does not exist'
+              'TagTemporalize: getCreations does not exist'
             );
             return first.getCreations();
           })
@@ -821,13 +827,13 @@ describe('Read-only API', function() {
             assert.equal(
               thc.length,
               2,
-              'TagHistory: should have found 2 creations'
+              'TagTemporalize: should have found 2 creations'
             );
             return Promise.resolve('done');
           });
 
         //Event associations check
-        const eventHistory = event.then(e => {
+        const eventTemporalize = event.then(e => {
           assert.exists(e, 'Creation: did not find an event');
           assert.exists(
             e.getEventHistories,
@@ -847,7 +853,7 @@ describe('Read-only API', function() {
           });
 
         //EventHistories associations check
-        const ehEvent = eventHistory
+        const ehEvent = eventTemporalize
           .then(eh => {
             assert.equal(
               eh.length,
@@ -866,7 +872,7 @@ describe('Read-only API', function() {
             return Promise.resolve('done');
           });
 
-        const ehCreation = eventHistory
+        const ehCreation = eventTemporalize
           .then(eh => {
             const first = eh[0];
             assert.exists(
@@ -882,19 +888,19 @@ describe('Read-only API', function() {
 
         //Check history data
         const userHistories = init.then(
-          assertCount(sequelize.models.UserHistory, 6)
+          assertCount(sequelize.models.UserTemporalize, 6)
         );
         const creationHistories = init.then(
-          assertCount(sequelize.models.CreationHistory, 6)
+          assertCount(sequelize.models.CreationTemporalize, 6)
         );
         const tagHistories = init.then(
-          assertCount(sequelize.models.TagHistory, 9)
+          assertCount(sequelize.models.TagTemporalize, 9)
         );
         const eventHistories = init.then(
-          assertCount(sequelize.models.EventHistory, 6)
+          assertCount(sequelize.models.EventTemporalize, 6)
         );
         const creationTagHistories = init.then(
-          assertCount(sequelize.models.CreationTagHistory, 1)
+          assertCount(sequelize.models.CreationTagTemporalize, 1)
         );
 
         return Promise.all([
@@ -904,17 +910,17 @@ describe('Read-only API', function() {
           chUser,
           creation,
           creationHistories,
-          creationHistory,
+          creationTemporalize,
           creationTagHistories,
           cUser,
           eCreation,
           event,
           eventHistories,
-          eventHistory,
+          eventTemporalize,
           init,
           tag,
           tagHistories,
-          tagHistory,
+          tagTemporalize,
           tCreation,
           thCreation,
           thTag,
@@ -922,7 +928,7 @@ describe('Read-only API', function() {
           uhUser,
           user,
           userHistories,
-          userHistory,
+          userTemporalize,
           ehEvent,
           ehCreation
         ]);
@@ -984,43 +990,43 @@ describe('Read-only API', function() {
     beforeEach(freshDB);
     it('onCreate: should not store the new version in history db', function() {
       return sequelize.models.User.create({ name: 'test' }).then(
-        assertCount(sequelize.models.UserHistory, 0)
+        assertCount(sequelize.models.UserTemporalize, 0)
       );
     });
     it('onUpdate/onDestroy: should save to the historyDB', function() {
       return sequelize.models.User.create()
-        .then(assertCount(sequelize.models.UserHistory, 0))
+        .then(assertCount(sequelize.models.UserTemporalize, 0))
         .then(user => {
           user.name = 'foo';
           return user.save();
         })
-        .then(assertCount(sequelize.models.UserHistory, 1))
+        .then(assertCount(sequelize.models.UserTemporalize, 1))
         .then(user => user.destroy())
-        .then(assertCount(sequelize.models.UserHistory, 2));
+        .then(assertCount(sequelize.models.UserTemporalize, 2));
     });
     it('onUpdate: should store the previous version to the historyDB', function() {
       return sequelize.models.User.create({ name: 'foo' })
-        .then(assertCount(sequelize.models.UserHistory, 0))
+        .then(assertCount(sequelize.models.UserTemporalize, 0))
         .then(user => {
           user.name = 'bar';
           return user.save();
         })
-        .then(assertCount(sequelize.models.UserHistory, 1))
-        .then(() => sequelize.models.UserHistory.findAll())
+        .then(assertCount(sequelize.models.UserTemporalize, 1))
+        .then(() => sequelize.models.UserTemporalize.findAll())
         .then(users => {
           assert.equal(users.length, 1, 'only one entry in DB');
           assert.equal(users[0].name, 'foo', 'previous entry saved');
         })
         .then(user => sequelize.models.User.findOne())
         .then(user => user.destroy())
-        .then(assertCount(sequelize.models.UserHistory, 2));
+        .then(assertCount(sequelize.models.UserTemporalize, 2));
     });
     it('onDelete: should store the previous version to the historyDB', function() {
       return sequelize.models.User.create({ name: 'foo' })
-        .then(assertCount(sequelize.models.UserHistory, 0))
+        .then(assertCount(sequelize.models.UserTemporalize, 0))
         .then(user => user.destroy())
-        .then(assertCount(sequelize.models.UserHistory, 1))
-        .then(() => sequelize.models.UserHistory.findAll())
+        .then(assertCount(sequelize.models.UserTemporalize, 1))
+        .then(() => sequelize.models.UserTemporalize.findAll())
         .then(users => {
           assert.equal(users.length, 1, 'only one entry in DB');
           assert.equal(users[0].name, 'foo', 'previous entry saved');
@@ -1036,15 +1042,15 @@ describe('Read-only API', function() {
         .then(t => {
           var opts = { transaction: t };
           return sequelize.models.User.create({ name: 'not foo' }, opts)
-            .then(assertCount(sequelize.models.UserHistory, 0, opts))
+            .then(assertCount(sequelize.models.UserTemporalize, 0, opts))
             .then(user => {
               user.name = 'foo';
               user.save(opts);
             })
-            .then(assertCount(sequelize.models.UserHistory, 1, opts))
+            .then(assertCount(sequelize.models.UserTemporalize, 1, opts))
             .then(() => t.rollback());
         })
-        .then(assertCount(sequelize.models.UserHistory, 0));
+        .then(assertCount(sequelize.models.UserTemporalize, 0));
     });
   });
 
@@ -1055,11 +1061,11 @@ describe('Read-only API', function() {
         { name: 'foo1' },
         { name: 'foo2' }
       ])
-        .then(assertCount(sequelize.models.UserHistory, 0))
+        .then(assertCount(sequelize.models.UserTemporalize, 0))
         .then(() =>
           sequelize.models.User.update({ name: 'updated-foo' }, { where: {} })
         )
-        .then(assertCount(sequelize.models.UserHistory, 2));
+        .then(assertCount(sequelize.models.UserTemporalize, 2));
     });
     it('should revert under transactions', function() {
       return sequelize
@@ -1070,17 +1076,17 @@ describe('Read-only API', function() {
             [{ name: 'foo1' }, { name: 'foo2' }],
             opts
           )
-            .then(assertCount(sequelize.models.UserHistory, 0, opts))
+            .then(assertCount(sequelize.models.UserTemporalize, 0, opts))
             .then(() =>
               sequelize.models.User.update(
                 { name: 'updated-foo' },
                 { where: {}, transaction: t }
               )
             )
-            .then(assertCount(sequelize.models.UserHistory, 2, opts))
+            .then(assertCount(sequelize.models.UserTemporalize, 2, opts))
             .then(() => t.rollback());
         })
-        .then(assertCount(sequelize.models.UserHistory, 0));
+        .then(assertCount(sequelize.models.UserTemporalize, 0));
     });
   });
 
@@ -1091,14 +1097,14 @@ describe('Read-only API', function() {
         { name: 'foo1' },
         { name: 'foo2' }
       ])
-        .then(assertCount(sequelize.models.UserHistory, 0))
+        .then(assertCount(sequelize.models.UserTemporalize, 0))
         .then(() =>
           sequelize.models.User.destroy({
             where: {},
             truncate: true // truncate the entire table
           })
         )
-        .then(assertCount(sequelize.models.UserHistory, 2));
+        .then(assertCount(sequelize.models.UserTemporalize, 2));
     });
     it('should revert under transactions', function() {
       return sequelize
@@ -1109,7 +1115,7 @@ describe('Read-only API', function() {
             [{ name: 'foo1' }, { name: 'foo2' }],
             opts
           )
-            .then(assertCount(sequelize.models.UserHistory, 0, opts))
+            .then(assertCount(sequelize.models.UserTemporalize, 0, opts))
             .then(() =>
               sequelize.models.User.destroy({
                 where: {},
@@ -1117,10 +1123,10 @@ describe('Read-only API', function() {
                 transaction: t
               })
             )
-            .then(assertCount(sequelize.models.UserHistory, 2, opts))
+            .then(assertCount(sequelize.models.UserTemporalize, 2, opts))
             .then(() => t.rollback());
         })
-        .then(assertCount(sequelize.models.UserHistory, 0));
+        .then(assertCount(sequelize.models.UserTemporalize, 0));
     });
   });
 
@@ -1128,14 +1134,14 @@ describe('Read-only API', function() {
     beforeEach(freshDBWithAssociations);
     it('should archive every entry', function() {
       return dataCreate()
-        .then(assertCount(sequelize.models.UserHistory, 3))
+        .then(assertCount(sequelize.models.UserTemporalize, 3))
         .then(() =>
           sequelize.models.User.destroy({
             where: {},
             truncate: true // truncate the entire table
           })
         )
-        .then(assertCount(sequelize.models.UserHistory, 6))
+        .then(assertCount(sequelize.models.UserTemporalize, 6))
         .then(() => sequelize.models.User.findOne())
         .then(u => u.getUserHistories())
         .then(uh =>
@@ -1150,31 +1156,31 @@ describe('Read-only API', function() {
         .then(() => sequelize.transaction())
         .then(t => {
           var opts = { transaction: t };
-          assertCount(sequelize.models.UserHistory, 6, opts);
+          assertCount(sequelize.models.UserTemporalize, 6, opts);
           return sequelize.models.User.destroy({
             where: {},
             truncate: true, // truncate the entire table
             transaction: t
           })
-            .then(assertCount(sequelize.models.UserHistory, 3, opts))
+            .then(assertCount(sequelize.models.UserTemporalize, 3, opts))
             .then(() => t.rollback())
             .catch(err => assert.exists(err));
         })
-        .then(assertCount(sequelize.models.UserHistory, 6));
+        .then(assertCount(sequelize.models.UserTemporalize, 6));
     });
   });
 
   describe('read-only ', function() {
     beforeEach(freshDB);
     it('should forbid updates', function() {
-      var userUpdate = sequelize.models.UserHistory.create({
+      var userUpdate = sequelize.models.UserTemporalize.create({
         name: 'bla00'
       }).then(uh => uh.update({ name: 'bla' }));
 
       return assert.isRejected(userUpdate, Error, 'Validation error');
     });
     it('should forbid deletes', function() {
-      var userUpdate = sequelize.models.UserHistory.create({
+      var userUpdate = sequelize.models.UserTemporalize.create({
         name: 'bla00'
       }).then(uh => uh.destroy());
 
@@ -1248,7 +1254,7 @@ describe('Read-only API', function() {
     beforeEach(freshDBWithFullModeAndParanoid);
     it('onCreate: should store the new version in history db', function() {
       return sequelize.models.User.create({ name: 'test' })
-        .then(() => sequelize.models.UserHistory.findAll())
+        .then(() => sequelize.models.UserTemporalize.findAll())
         .then(histories => {
           assert.equal(1, histories.length);
           assert.equal('test', histories[0].name);
@@ -1258,7 +1264,7 @@ describe('Read-only API', function() {
     it('onUpdate: should store the new version to the historyDB', function() {
       return sequelize.models.User.create({ name: 'test' })
         .then(user => user.update({ name: 'renamed' }))
-        .then(() => sequelize.models.UserHistory.findAll())
+        .then(() => sequelize.models.UserTemporalize.findAll())
         .then(histories => {
           assert.equal(histories.length, 2, 'two entries in DB');
           assert.equal(histories[0].name, 'test', 'first version saved');
@@ -1270,7 +1276,7 @@ describe('Read-only API', function() {
       return sequelize.models.User.create({ name: 'test' })
         .then(user => user.update({ name: 'renamed' }))
         .then(user => user.destroy())
-        .then(() => sequelize.models.UserHistory.findAll())
+        .then(() => sequelize.models.UserTemporalize.findAll())
         .then(histories => {
           assert.equal(histories.length, 3, 'three entries in DB');
           assert.equal(histories[0].name, 'test', 'first version saved');
@@ -1287,7 +1293,7 @@ describe('Read-only API', function() {
       return sequelize.models.User.create({ name: 'test' })
         .then(user => user.destroy())
         .then(user => user.restore())
-        .then(() => sequelize.models.UserHistory.findAll())
+        .then(() => sequelize.models.UserTemporalize.findAll())
         .then(histories => {
           assert.equal(histories.length, 3, 'three entries in DB');
           assert.equal(histories[0].name, 'test', 'first version saved');
@@ -1308,10 +1314,10 @@ describe('Read-only API', function() {
 
           return sequelize.models.User.create({ name: 'test' }, options)
             .then(user => user.destroy(options))
-            .then(assertCount(sequelize.models.UserHistory, 2, options))
+            .then(assertCount(sequelize.models.UserTemporalize, 2, options))
             .then(() => transaction.rollback());
         })
-        .then(assertCount(sequelize.models.UserHistory, 0));
+        .then(assertCount(sequelize.models.UserTemporalize, 0));
     });
   });
 });
